@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+	<script type="text/javascript">
+        /**
+         * Returns a random integer between min (inclusive) and max (inclusive)
+         * Using Math.round() will give you a non-uniform distribution!
+         */
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function ChatHandler(userToken) {
+            this.userToken = userToken;
+        }
+
+        // class methods
+        ChatHandler.prototype.open = function(onOpen, onMessage, onClose, callback) {
+            if ("WebSocket" in window) {
+                this.ws = new WebSocket("ws://localhost:8888/chat?user_token=" + this.userToken);
+                this.ws.onopen = function() {
+                    onOpen();
+                };
+                this.ws.onmessage = function (event) {
+                    onMessage(event);
+                };
+                this.ws.onclose = function() {
+                    onClose();
+                };
+                callback(null);
+            } else {
+                callback("WEBSOCKET_NOT_SUPPORT");
+            }
+        }
+
+        ChatHandler.prototype.send = function (msg) {
+            this.ws.send(msg);
+        }
+
+        var userToken = getRandomInt(0, 10000);
+        var chatHandler = new ChatHandler(userToken);
+
+        function openWebSocket() {
+            var messageContainer = document.getElementById("messages");
+            var onopen = function() {
+                // ws.send("ping");
+            };
+            var onmessage = function (event) {
+                var receivedMsg = event.data;
+                console.log("received message:" + event.data);
+                messageContainer.innerHTML += "<p>" + receivedMsg + "</p>";
+            };
+            var onclose = function() {
+                messageContainer.innerHTML = "Warning: Connection is closed...";
+            };
+            chatHandler.open(onopen, onmessage, onclose, function(err){
+                if(err) {
+                    messageContainer.innerHTML = "Error: WebSocket is supported by your Browser!";
+                } else {
+                    messageContainer.innerHTML = "Connection is opened, you can send message now...";
+                }
+            });
+        }
+
+        function sendMessage() {
+            var message = document.getElementById('content').value;
+            chatHandler.send(message + "(from " + userToken + ")");
+        }
+        </script>
+    </head>
+    <body>
+        <a href="javascript:openWebSocket()">Open WebSocket</a>
+        <div id="messages" style="height:200px"></div>
+        <table>
+            <tr>
+              <td>
+                  <input name="body" id="content" style="width:500px">
+                  <a href="javascript:sendMessage()" style="padding-left:10px">send message</a>
+              </td>
+            </tr>
+          </table>
+    </body>
+
+</html>
